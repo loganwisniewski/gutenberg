@@ -72,7 +72,7 @@ class WP_Webfonts {
 			$hook                    = 'wp_enqueue_scripts';
 		}
 
-		add_action( 'init', array( $this, 'load_used_webfonts_for_current_template' ) );
+		add_action( 'init', array( $this, 'load_used_webfonts' ) );
 
 		add_action( 'save_post_wp_template', array( $this, 'save_used_webfonts_for_template' ), 10, 2 );
 		add_action( 'save_post_wp_template_part', array( $this, 'update_webfonts_used_by_templates' ), 10, 2 );
@@ -88,8 +88,9 @@ class WP_Webfonts {
 	 *
 	 * @return void
 	 */
-	public function load_used_webfonts_for_current_template() {
-		$used_webfonts = get_option( self::$webfont_cache_option, array() );
+	public function load_used_webfonts() {
+		self::$used_webfonts = $this->get_globally_used_webfonts();
+		$used_webfonts       = get_option( self::$webfont_cache_option, array() );
 
 		foreach ( $used_webfonts as $template => $webfonts ) {
 			add_filter(
@@ -102,6 +103,69 @@ class WP_Webfonts {
 				}
 			);
 		}
+	}
+
+	/**
+	 * Get globally used webfonts.
+	 *
+	 * @return array
+	 */
+	private function get_globally_used_webfonts() {
+		$global_styles          = gutenberg_get_global_styles();
+		$globally_used_webfonts = array();
+
+		// Register used fonts from blocks.
+		foreach ( $global_styles['blocks'] as $id => $setting ) {
+			$font_family_slug = $this->get_font_family_from_setting( $setting );
+
+			if ( $font_family_slug ) {
+				$globally_used_webfonts[ $font_family_slug ] = 1;
+			}
+		}
+
+		// Register used fonts from elements.
+		foreach ( $global_styles['elements'] as $id => $setting ) {
+			$font_family_slug = $this->get_font_family_from_setting( $setting );
+
+			if ( $font_family_slug ) {
+				$globally_used_webfonts[ $font_family_slug ] = 1;
+			}
+		}
+
+		// Get global font.
+		$font_family_slug = $this->get_font_family_from_setting( $global_styles );
+
+		if ( $font_family_slug ) {
+			$globally_used_webfonts[ $font_family_slug ] = 1;
+		}
+
+		return $globally_used_webfonts;
+	}
+
+	/**
+	 * Get font family from global setting.
+	 *
+	 * @param mixed $setting The global setting.
+	 * @return string|false
+	 */
+	private function get_font_family_from_setting( $setting ) {
+		if ( isset( $setting['typography'] ) && isset( $setting['typography']['fontFamily'] ) ) {
+			$font_family = $setting['typography']['fontFamily'];
+
+			preg_match( '/var\(--wp--(?:preset|custom)--font-family--([^\\\]+)\)/', $font_family, $matches );
+
+			if ( isset( $matches[1] ) ) {
+				return _wp_to_kebab_case( $matches[1] );
+			}
+
+			preg_match( '/var:(?:preset|custom)\|font-family\|(.+)/', $font_family, $matches );
+
+			if ( isset( $matches[1] ) ) {
+				return _wp_to_kebab_case( $matches[1] );
+			}
+		}
+
+		return false;
 	}
 
 	/**
