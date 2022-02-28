@@ -74,6 +74,8 @@ class WP_Webfonts {
 
 		add_action( 'init', array( $this, 'load_used_webfonts' ) );
 
+		add_action( 'switch_theme', array( $this, 'update_webfonts_used_by_templates' ) );
+
 		add_action( 'save_post_wp_template', array( $this, 'save_used_webfonts_for_template' ), 10, 2 );
 		add_action( 'save_post_wp_template_part', array( $this, 'update_webfonts_used_by_templates' ), 10, 2 );
 
