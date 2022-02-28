@@ -20,6 +20,15 @@ class WP_Webfonts {
 	private static $webfonts = array();
 
 	/**
+	 * The name of the webfont cache option name.
+	 *
+	 * @static
+	 * @access private
+	 * @var string
+	 */
+	private static $webfont_cache_option = 'gutenberg_used_webfonts';
+
+	/**
 	 * An array of registered providers.
 	 *
 	 * @static
@@ -51,10 +60,59 @@ class WP_Webfonts {
 			$this->stylesheet_handle = 'webfonts';
 			$hook                    = 'wp_enqueue_scripts';
 		}
+
+		add_action( 'save_post_wp_template', array( $this, 'save_used_webfonts_for_template' ), 10, 2 );
+
 		add_action( $hook, array( $this, 'generate_and_enqueue_styles' ) );
 
 		// Enqueue webfonts in the block editor.
 		add_action( 'admin_init', array( $this, 'generate_and_enqueue_editor_styles' ) );
+	}
+
+	/**
+	 * Saves the fonts used by the saved template.
+
+	 * @param integer $post_id The template ID.
+	 * @param WP_Post $post The template post object.
+	 * @return void
+	 */
+	public function save_used_webfonts_for_template( $post_id, $post ) {
+		$used_webfonts = get_option( self::$webfont_cache_option, array() );
+
+		$used_webfonts[ $post->post_name ] = $this->get_fonts_from_template( $post->post_content );
+
+		update_option( self::$webfont_cache_option, $used_webfonts );
+	}
+
+	/**
+	 * Get the list of fonts used in the template.
+	 * Recursively gets the fonts used in the template parts.
+
+	 * @param string $template_content The template content.
+	 * @return array
+	 */
+	private function get_fonts_from_template( $template_content ) {
+		$used_webfonts = array();
+
+		$blocks = _flatten_blocks( parse_blocks( $template_content ) );
+
+		foreach ( $blocks as $block ) {
+			if ( 'core/template-part' === $block['blockName'] ) {
+				$template_part           = get_block_template( get_stylesheet() . '//' . $block['attrs']['slug'], 'wp_template_part' );
+				$fonts_for_template_part = $this->get_fonts_from_template( $template_part->content );
+
+				$used_webfonts = array_merge(
+					$used_webfonts,
+					$fonts_for_template_part
+				);
+			}
+
+			if ( isset( $block['attrs']['fontFamily'] ) ) {
+				$used_webfonts[ $block['attrs']['fontFamily'] ] = 1;
+			}
+		}
+
+		return $used_webfonts;
 	}
 
 	/**
