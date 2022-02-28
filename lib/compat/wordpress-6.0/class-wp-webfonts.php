@@ -20,6 +20,17 @@ class WP_Webfonts {
 	private static $webfonts = array();
 
 	/**
+	 * An array of actually used webfonts by the front-end.
+	 * This gets populated in several `register_*` methods
+	 * inside this class.
+	 *
+	 * @static
+	 * @access private
+	 * @var array
+	 */
+	private static $used_webfonts = array();
+
+	/**
 	 * The name of the webfont cache option name.
 	 *
 	 * @static
@@ -61,6 +72,8 @@ class WP_Webfonts {
 			$hook                    = 'wp_enqueue_scripts';
 		}
 
+		add_action( 'init', array( $this, 'load_used_webfonts_for_current_template' ) );
+
 		add_action( 'save_post_wp_template', array( $this, 'save_used_webfonts_for_template' ), 10, 2 );
 		add_action( 'save_post_wp_template_part', array( $this, 'update_webfonts_used_by_templates' ), 10, 2 );
 
@@ -68,6 +81,27 @@ class WP_Webfonts {
 
 		// Enqueue webfonts in the block editor.
 		add_action( 'admin_init', array( $this, 'generate_and_enqueue_editor_styles' ) );
+	}
+
+	/**
+	 * Set list of used fonts in the current page.
+	 *
+	 * @return void
+	 */
+	public function load_used_webfonts_for_current_template() {
+		$used_webfonts = get_option( self::$webfont_cache_option, array() );
+
+		foreach ( $used_webfonts as $template => $webfonts ) {
+			add_filter(
+				$template . '_template',
+				function() use ( $webfonts ) {
+					self::$used_webfonts = array_merge(
+						self::$used_webfonts,
+						$webfonts
+					);
+				}
+			);
+		}
 	}
 
 	/**
@@ -281,9 +315,30 @@ class WP_Webfonts {
 	}
 
 	/**
+	 * Filter unused webfonts based off self::$used_webfonts.
+	 *
+	 * @return void
+	 */
+	private function filter_unused_webfonts_from_providers() {
+		$registered_webfonts = $this->get_fonts();
+
+		foreach ( $registered_webfonts as $id => $webfont ) {
+			$font_name = _wp_to_kebab_case( $webfont['font-family'] );
+
+			if ( ! isset( self::$used_webfonts[ $font_name ] ) ) {
+				unset( $registered_webfonts[ $id ] );
+			}
+		}
+
+		self::$webfonts = $registered_webfonts;
+	}
+
+	/**
 	 * Generate and enqueue webfonts styles.
 	 */
 	public function generate_and_enqueue_styles() {
+		$this->filter_unused_webfonts_from_providers();
+
 		// Generate the styles.
 		$styles = $this->generate_styles();
 
