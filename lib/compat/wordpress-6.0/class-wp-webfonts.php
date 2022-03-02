@@ -40,6 +40,15 @@ class WP_Webfonts {
 	private static $webfont_cache_option = 'gutenberg_used_webfonts';
 
 	/**
+	 * The name of the globally used webfont cache option name.
+	 *
+	 * @static
+	 * @access private
+	 * @var string
+	 */
+	private static $global_webfont_cache_option = 'gutenberg_globally_used_webfonts';
+
+	/**
 	 * An array of registered providers.
 	 *
 	 * @static
@@ -73,12 +82,15 @@ class WP_Webfonts {
 		}
 
 		add_action( 'init', array( $this, 'register_current_template_filter' ) );
+		add_action( 'init', array( $this, 'register_globally_used_webfonts' ) );
 
-		add_action( 'switch_theme', array( $this, 'invalidate_used_webfonts_cache' ) );
+		add_action( 'switch_theme', array( $this, 'invalidate_all_used_webfonts_cache' ) );
 		add_action( 'save_post_wp_template', array( $this, 'invalidate_used_webfonts_cache' ) );
 		add_action( 'save_post_wp_template_part', array( $this, 'invalidate_used_webfonts_cache' ) );
 
 		add_filter( 'the_content', array( $this, 'register_webfonts_used_in_content' ) );
+
+		add_filter( 'rest_request_after_callbacks', array( $this, 'maybe_invalidate_globally_used_webfonts_cache' ), 10, 3 );
 
 		add_action( $hook, array( $this, 'generate_and_enqueue_styles' ) );
 
@@ -86,6 +98,51 @@ class WP_Webfonts {
 		add_action( 'admin_init', array( $this, 'generate_and_enqueue_editor_styles' ) );
 	}
 
+	/**
+	 * Invalidates cache on global styles update.
+	 *
+	 * @param WP_REST_Response $response The response class.
+	 * @param WP_REST_Server   $handler The request handler.
+	 * @param WP_REST_Request  $request The request class.
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function maybe_invalidate_globally_used_webfonts_cache( $response, $handler, $request ) {
+		if ( 'GET' === $request->get_method() || ! is_a( $handler['callback'][0], 'WP_REST_Global_Styles_Controller' ) ) {
+			// We only want to intercept requests that update global styles!
+			return $response;
+		}
+
+		$this->invalidate_globally_used_webfonts_cache();
+		update_option( self::$global_webfont_cache_option, $this->get_globally_used_webfonts() );
+
+		return $response;
+	}
+
+	/**
+	 * Register globally used webfonts.
+	 *
+	 * @return void
+	 */
+	public function register_globally_used_webfonts() {
+		$globally_used_webfonts = get_option( self::$global_webfont_cache_option );
+
+		if ( $globally_used_webfonts ) {
+			self::$used_webfonts = array_merge( self::$used_webfonts, $globally_used_webfonts );
+			return;
+		}
+
+		$globally_used_webfonts = $this->get_globally_used_webfonts();
+		update_option( self::$global_webfont_cache_option, $globally_used_webfonts );
+
+		self::$used_webfonts = array_merge( self::$used_webfonts, $globally_used_webfonts );
+	}
+
+	/**
+	 * Hook into every possible template so we can get the full template object on page load.
+	 *
+	 * @return void
+	 */
 	public function register_current_template_filter() {
 		$templates = get_block_templates( array(), 'wp_template' );
 
@@ -99,11 +156,21 @@ class WP_Webfonts {
 		}
 	}
 
+	/**
+	 * Look up used webfonts cache for the template that triggered the hook
+	 * registered on `register_current_template_filter`.
+	 *
+	 * If the webfonts array is not found there, parse the template, extract the webfonts
+	 * and register it in the option.
+	 *
+	 * @param WP_Template $template The template that is about to be rendered.
+	 * @return void
+	 */
 	public function register_used_webfonts_by_template( $template ) {
 		$used_webfonts_cache = get_option( self::$webfont_cache_option, array() );
 
 		if ( isset( $used_webfonts_cache[ $template->slug ] ) ) {
-			self::$used_webfonts = $used_webfonts_cache[ $template->slug ];
+			self::$used_webfonts = array_merge( self::$used_webfonts, $used_webfonts_cache[ $template->slug ] );
 			return;
 		}
 
@@ -111,7 +178,7 @@ class WP_Webfonts {
 		$used_webfonts_cache[ $template->slug ] = $used_webfonts;
 
 		update_option( self::$webfont_cache_option, $used_webfonts_cache );
-		self::$used_webfonts = $used_webfonts_cache[ $template->slug ];
+		self::$used_webfonts = array_merge( self::$used_webfonts, $used_webfonts_cache[ $template->slug ] );
 	}
 
 	/**
@@ -149,28 +216,6 @@ class WP_Webfonts {
 		}
 
 		return $used_webfonts;
-	}
-
-	/**
-	 * Set list of used fonts in the current page.
-	 *
-	 * @return void
-	 */
-	public function load_used_webfonts() {
-		self::$used_webfonts = $this->get_globally_used_webfonts();
-		$used_webfonts       = get_option( self::$webfont_cache_option, array() );
-
-		foreach ( $used_webfonts as $template => $webfonts ) {
-			add_filter(
-				$template . '_template',
-				function() use ( $webfonts ) {
-					self::$used_webfonts = array_merge(
-						self::$used_webfonts,
-						$webfonts
-					);
-				}
-			);
-		}
 	}
 
 	/**
@@ -234,6 +279,25 @@ class WP_Webfonts {
 		}
 
 		return false;
+	}
+
+	/**
+	 * We're changing the theme, so let's throw all the used webfonts cache away!
+	 *
+	 * @return void
+	 */
+	public function invalidate_all_used_webfonts_cache() {
+		$this->invalidate_used_webfonts_cache();
+		$this->invalidate_globally_used_webfonts_cache();
+	}
+
+	/**
+	 * Invalidate the globally used webfonts cache.
+	 *
+	 * @return void
+	 */
+	private function invalidate_globally_used_webfonts_cache() {
+		delete_option( self::$global_webfont_cache_option );
 	}
 
 	/**
