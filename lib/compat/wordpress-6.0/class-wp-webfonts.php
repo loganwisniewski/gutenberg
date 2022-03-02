@@ -428,6 +428,8 @@ class WP_Webfonts {
 	private function filter_unused_webfonts_from_providers() {
 		$registered_webfonts = $this->get_fonts();
 
+		self::$used_webfonts = apply_filters( 'gutenberg_used_webfonts', self::$used_webfonts );
+
 		foreach ( $registered_webfonts as $id => $webfont ) {
 			$font_name = _wp_to_kebab_case( $webfont['font-family'] );
 
