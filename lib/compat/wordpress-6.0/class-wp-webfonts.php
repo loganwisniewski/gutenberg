@@ -218,7 +218,8 @@ class WP_Webfonts {
 	private function get_fonts_from_template( $template_content ) {
 		$used_webfonts = array();
 
-		$blocks = _flatten_blocks( parse_blocks( $template_content ) );
+		$blocks = parse_blocks( $template_content );
+		$blocks = _flatten_blocks( $blocks );
 
 		foreach ( $blocks as $block ) {
 			if ( 'core/template-part' === $block['blockName'] ) {
