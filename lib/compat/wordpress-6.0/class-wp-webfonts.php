@@ -76,6 +76,8 @@ class WP_Webfonts {
 
 		add_action( 'switch_theme', array( $this, 'update_webfonts_used_by_templates' ) );
 
+		add_filter( 'the_content', array( $this, 'register_webfonts_used_in_content' ) );
+
 		add_action( 'save_post_wp_template', array( $this, 'save_used_webfonts_for_template' ), 10, 2 );
 		add_action( 'save_post_wp_template_part', array( $this, 'update_webfonts_used_by_templates' ), 10, 2 );
 
@@ -83,6 +85,43 @@ class WP_Webfonts {
 
 		// Enqueue webfonts in the block editor.
 		add_action( 'admin_init', array( $this, 'generate_and_enqueue_editor_styles' ) );
+	}
+
+	/**
+	 * Register webfonts inside post content as used.
+	 *
+	 * @param string $content The post content.
+	 * @return string
+	 */
+	public function register_webfonts_used_in_content( $content ) {
+		self::$used_webfonts = array_merge( self::$used_webfonts, $this->get_fonts_from_content( $content ) );
+
+		return $content;
+	}
+
+	/**
+	 * Get used webfonts inside post content.
+	 *
+	 * @param string $content The post content.
+	 * @return array
+	 */
+	private function get_fonts_from_content( $content ) {
+		$used_webfonts = array();
+
+		$blocks = parse_blocks( $content );
+		$blocks = _flatten_blocks( $blocks );
+
+		foreach ( $blocks as $block ) {
+			if ( isset( $block['innerHTML'] ) ) {
+				preg_match( '/class\=\".*has-(?P<slug>.+)-font-family/', $block['innerHTML'], $matches );
+
+				if ( isset( $matches['slug'] ) ) {
+					$used_webfonts[ $matches['slug'] ] = 1;
+				}
+			}
+		}
+
+		return $used_webfonts;
 	}
 
 	/**
