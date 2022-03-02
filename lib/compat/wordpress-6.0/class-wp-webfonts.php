@@ -117,7 +117,7 @@ class WP_Webfonts {
 		$globally_used_webfonts = array();
 
 		// Register used fonts from blocks.
-		foreach ( $global_styles['blocks'] as $id => $setting ) {
+		foreach ( $global_styles['blocks'] as $setting ) {
 			$font_family_slug = $this->get_font_family_from_setting( $setting );
 
 			if ( $font_family_slug ) {
@@ -126,7 +126,7 @@ class WP_Webfonts {
 		}
 
 		// Register used fonts from elements.
-		foreach ( $global_styles['elements'] as $id => $setting ) {
+		foreach ( $global_styles['elements'] as $setting ) {
 			$font_family_slug = $this->get_font_family_from_setting( $setting );
 
 			if ( $font_family_slug ) {
