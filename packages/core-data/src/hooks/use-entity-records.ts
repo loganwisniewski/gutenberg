@@ -3,7 +3,7 @@
  */
 import useQuerySelect from './use-query-select';
 import { store as coreStore } from '../';
-import { Status } from './constants';
+import type { Status } from './constants';
 
 interface EntityRecordsResolution< RecordType > {
 	/** The requested entity record */
@@ -67,7 +67,7 @@ export default function __experimentalUseEntityRecords< RecordType >(
 	queryArgs: unknown = {}
 ): EntityRecordsResolution< RecordType > {
 	const { data: records, ...rest } = useQuerySelect(
-		( query ) =>
+		( query: any ) =>
 			query( coreStore ).getEntityRecords( kind, name, queryArgs ),
 		[ kind, name, queryArgs ]
 	);
