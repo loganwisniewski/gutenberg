@@ -411,6 +411,11 @@ persistencePlugin.__unstableMigrate = ( pluginOptions ) => {
 		'core/edit-post',
 		'hiddenBlockTypes'
 	);
+	migrateIndividualPreferenceToPreferencesStore(
+		persistence,
+		'core/edit-post',
+		'localAutosaveInterval'
+	);
 };
 
 export default persistencePlugin;
