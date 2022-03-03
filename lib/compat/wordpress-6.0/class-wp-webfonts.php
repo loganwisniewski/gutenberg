@@ -227,21 +227,25 @@ class WP_Webfonts {
 		$global_styles          = gutenberg_get_global_styles();
 		$globally_used_webfonts = array();
 
-		// Register used fonts from blocks.
-		foreach ( $global_styles['blocks'] as $setting ) {
-			$font_family_slug = $this->get_font_family_from_setting( $setting );
+		if ( isset( $global_styles['blocks'] ) ) {
+			// Register used fonts from blocks.
+			foreach ( $global_styles['blocks'] as $setting ) {
+				$font_family_slug = $this->get_font_family_from_setting( $setting );
 
-			if ( $font_family_slug ) {
-				$globally_used_webfonts[ $font_family_slug ] = 1;
+				if ( $font_family_slug ) {
+					$globally_used_webfonts[ $font_family_slug ] = 1;
+				}
 			}
 		}
 
-		// Register used fonts from elements.
-		foreach ( $global_styles['elements'] as $setting ) {
-			$font_family_slug = $this->get_font_family_from_setting( $setting );
+		if ( isset( $global_styles['elements'] ) ) {
+			// Register used fonts from elements.
+			foreach ( $global_styles['elements'] as $setting ) {
+				$font_family_slug = $this->get_font_family_from_setting( $setting );
 
-			if ( $font_family_slug ) {
-				$globally_used_webfonts[ $font_family_slug ] = 1;
+				if ( $font_family_slug ) {
+					$globally_used_webfonts[ $font_family_slug ] = 1;
+				}
 			}
 		}
 
