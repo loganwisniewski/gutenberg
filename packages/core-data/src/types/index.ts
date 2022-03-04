@@ -20,8 +20,7 @@ import type { Widget } from './widget';
 import type { WidgetType } from './widget-type';
 import type { WpTemplate } from './wp-template';
 import type { WpTemplatePart } from './wp-template-part';
-import type { Context, Updatable, EntityQuery } from './helpers';
-import type { CoreEntity } from '../entities';
+import type { Context, Updatable } from './helpers';
 
 export type { BaseEntityRecords } from './base-entity-records';
 
@@ -29,7 +28,6 @@ export type {
 	Context,
 	Updatable,
 	Attachment,
-	EntityQuery,
 	Comment,
 	MenuLocation,
 	NavMenu,
