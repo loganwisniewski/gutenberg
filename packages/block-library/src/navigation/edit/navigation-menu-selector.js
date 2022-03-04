@@ -43,7 +43,9 @@ export default function NavigationMenuSelector( {
 		canSwitchNavigationMenu,
 	} = useNavigationMenu();
 
-	const createNavigationMenu = useCreateNavigationMenu( clientId );
+	const { create: createNavigationMenu } = useCreateNavigationMenu(
+		clientId
+	);
 
 	const onFinishMenuCreation = async (
 		blocks,
