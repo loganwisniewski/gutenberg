@@ -110,11 +110,8 @@ export function useFocusFirstElement( clientId ) {
 		if ( ! target.getAttribute( 'contenteditable' ) ) {
 			const focusElement = focus.tabbable.findNext( target );
 			// Ensure is not Add block/Block Inserter trigger
-			const isBlockInserterTrigger = focusElement.hasAttribute(
-				'aria-label'
-			)
-				? focusElement.getAttribute( 'aria-label' ) === 'Add block'
-				: false;
+			const isBlockInserterTrigger =
+				focusElement.getAttribute( 'aria-label' ) === 'Add block';
 			// Make sure focusElement is valid, form field, and in current ref.
 			if (
 				focusElement &&
