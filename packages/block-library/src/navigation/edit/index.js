@@ -520,7 +520,7 @@ function Navigation( {
 						}
 						selectBlock( clientId );
 					} }
-					onCreateEmpty={ createNavigationMenu }
+					onCreateEmpty={ () => createNavigationMenu( [] ) }
 				/>
 			</TagName>
 		);
