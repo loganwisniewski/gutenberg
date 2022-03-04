@@ -39,7 +39,7 @@ function gutenberg_register_spacing_support( $block_type ) {
  * @return array Block spacing CSS classes and inline styles.
  */
 function gutenberg_apply_spacing_support( $block_type, $block_attributes ) {
-	if ( gutenberg_skip_spacing_serialization( $block_type ) ) {
+	if ( gutenberg_should_skip_block_supports_serialization( $block_type, 'spacing' ) ) {
 		return array();
 	}
 
@@ -47,7 +47,7 @@ function gutenberg_apply_spacing_support( $block_type, $block_attributes ) {
 	$has_margin_support  = gutenberg_block_has_support( $block_type, array( 'spacing', 'margin' ), false );
 	$styles              = array();
 
-	if ( $has_padding_support && ! gutenberg_skip_spacing_serialization( $block_type, 'padding' ) ) {
+	if ( $has_padding_support && ! gutenberg_should_skip_block_supports_serialization( $block_type, 'spacing', 'padding' ) ) {
 		$padding_value = _wp_array_get( $block_attributes, array( 'style', 'spacing', 'padding' ), null );
 
 		if ( is_array( $padding_value ) ) {
@@ -59,7 +59,7 @@ function gutenberg_apply_spacing_support( $block_type, $block_attributes ) {
 		}
 	}
 
-	if ( $has_margin_support && ! gutenberg_skip_spacing_serialization( $block_type, 'margin' ) ) {
+	if ( $has_margin_support && ! gutenberg_should_skip_block_supports_serialization( $block_type, 'spacing', 'margin' ) ) {
 		$margin_value = _wp_array_get( $block_attributes, array( 'style', 'spacing', 'margin' ), null );
 
 		if ( is_array( $margin_value ) ) {
@@ -72,26 +72,6 @@ function gutenberg_apply_spacing_support( $block_type, $block_attributes ) {
 	}
 
 	return empty( $styles ) ? array() : array( 'style' => implode( ' ', $styles ) );
-}
-
-/**
- * Checks whether serialization of the current block's spacing properties should
- * occur.
- *
- * @param WP_Block_type $block_type Block type.
- * @param string        $feature    Optional name of individual feature to check.
- *
- * @return boolean Whether to serialize spacing support styles & classes.
- */
-function gutenberg_skip_spacing_serialization( $block_type, $feature = null ) {
-	$path               = array( 'spacing', '__experimentalSkipSerialization' );
-	$skip_serialization = _wp_array_get( $block_type->supports, $path, false );
-
-	if ( is_array( $skip_serialization ) ) {
-		return in_array( $feature, $skip_serialization, true );
-	}
-
-	return $skip_serialization;
 }
 
 // Register the block support.
