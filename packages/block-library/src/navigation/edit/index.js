@@ -39,6 +39,7 @@ import {
 	Spinner,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import { speak } from '@wordpress/a11y';
 
 /**
  * Internal dependencies
@@ -157,6 +158,13 @@ function Navigation( {
 	// the Select Menu dropdown.
 	useNavigationEntities();
 
+	const [
+		showNavigationMenuCreateNotice,
+		hideNavigationMenuCreateNotice,
+	] = useNavigationNotice( {
+		name: 'block-library/core/navigation/create',
+	} );
+
 	const {
 		create: createNavigationMenu,
 		status: createNavigationMenuStatus,
@@ -165,9 +173,25 @@ function Navigation( {
 	} = useCreateNavigationMenu( clientId );
 
 	useEffect( () => {
+		hideNavigationMenuCreateNotice();
+
+		if ( createNavigationMenuStatus === 'pending' ) {
+			speak( __( `Creating Navigation Menu.` ) );
+		}
+
 		if ( createNavigationMenuStatus === 'success' ) {
 			setRef( createNavigationMenuPost.id );
 			selectBlock( clientId );
+
+			showNavigationMenuCreateNotice(
+				__( `Navigation Menu successfully created.` )
+			);
+		}
+
+		if ( createNavigationMenuStatus === 'error' ) {
+			showNavigationMenuCreateNotice(
+				__( 'Failed to create Navigation Menu.' )
+			);
 		}
 	}, [
 		createNavigationMenu,
