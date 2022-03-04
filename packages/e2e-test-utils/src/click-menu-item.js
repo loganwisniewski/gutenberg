@@ -11,7 +11,7 @@ import { first } from 'lodash';
 export async function clickMenuItem( label ) {
 	const elementToClick = first(
 		await page.$x(
-			`//div[@role="menu"]//span[contains(concat(" ", @class, " "), " components-menu-item__item ")][contains(text(), "${ label }")]`
+			`//div[@role="menu"]//span[contains(concat(" ", @class, " "), " components-menu-item__item ")][text()="${ label }"]`
 		)
 	);
 	await elementToClick.click();
