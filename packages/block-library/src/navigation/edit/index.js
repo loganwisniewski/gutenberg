@@ -55,6 +55,7 @@ import UnsavedInnerBlocks from './unsaved-inner-blocks';
 import NavigationMenuDeleteControl from './navigation-menu-delete-control';
 import useNavigationNotice from './use-navigation-notice';
 import OverlayMenuIcon from './overlay-menu-icon';
+import useCreateNavigationMenu from './use-create-navigation-menu';
 
 const EMPTY_ARRAY = [];
 
@@ -157,6 +158,25 @@ function Navigation( {
 	useNavigationEntities();
 
 	const {
+		create: createNavigationMenu,
+		status: createNavigationMenuStatus,
+		error: createNavigationMenuError,
+		value: createNavigationMenuPost,
+	} = useCreateNavigationMenu( clientId );
+
+	useEffect( () => {
+		if ( createNavigationMenuStatus === 'success' ) {
+			setRef( createNavigationMenuPost.id );
+			selectBlock( clientId );
+		}
+	}, [
+		createNavigationMenu,
+		createNavigationMenuStatus,
+		createNavigationMenuError,
+		createNavigationMenuPost,
+	] );
+
+	const {
 		hasUncontrolledInnerBlocks,
 		uncontrolledInnerBlocks,
 		isInnerBlockSelected,
@@ -239,7 +259,9 @@ function Navigation( {
 	// - we don't have uncontrolled blocks.
 	// - (legacy) we have a Navigation Area without a ref attribute pointing to a Navigation Post.
 	const isPlaceholder =
-		! ref && ( ! hasUncontrolledInnerBlocks || isWithinUnassignedArea );
+		createNavigationMenuStatus !== 'pending' &&
+		! ref &&
+		( ! hasUncontrolledInnerBlocks || isWithinUnassignedArea );
 
 	const isEntityAvailable =
 		! isNavigationMenuMissing && isNavigationMenuResolved;
@@ -247,7 +269,9 @@ function Navigation( {
 	// "loading" state:
 	// - there is a ref attribute pointing to a Navigation Post
 	// - the Navigation Post isn't available (hasn't resolved) yet.
-	const isLoading = !! ( ref && ! isEntityAvailable );
+	const isLoading =
+		createNavigationMenuStatus === 'pending' ||
+		!! ( ref && ! isEntityAvailable );
 
 	const blockProps = useBlockProps( {
 		ref: navRef,
@@ -496,6 +520,7 @@ function Navigation( {
 						}
 						selectBlock( clientId );
 					} }
+					onCreateEmpty={ createNavigationMenu }
 				/>
 			</TagName>
 		);
